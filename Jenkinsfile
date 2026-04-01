@@ -17,10 +17,9 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                sh 'cp index.html /opt/tomcat/webapps/ROOT/index.html'
-                sh '/opt/tomcat/bin/shutdown.sh || true'
-                sh '/opt/tomcat/bin/startup.sh'
-                echo "✅ Deployed index.html to Apache Tomcat successfully"
+                sh 'mkdir -p /var/www/html'
+                sh 'cp index.html /var/www/html/index.html'
+                echo "✅ Deployed index.html successfully"
             }
         }
     }
