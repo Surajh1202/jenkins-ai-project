@@ -1,0 +1,36 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('AI Code Review') {
+            steps {
+                sh 'chmod +x review.sh'
+                sh './review.sh index.html'
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                sh 'cp index.html /opt/tomcat/webapps/ROOT/index.html'
+                sh '/opt/tomcat/bin/shutdown.sh || true'
+                sh '/opt/tomcat/bin/startup.sh'
+                echo "✅ Deployed index.html to Apache Tomcat successfully"
+            }
+        }
+    }
+
+    post {
+        failure {
+            echo "❌ Pipeline failed — check AI review report."
+        }
+        success {
+            echo "🚀 Pipeline completed — site deployed."
+        }
+    }
+}
