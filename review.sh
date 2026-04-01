@@ -1,13 +1,14 @@
 #!/bin/bash
-# review.sh — AI Code Review using Amazon Q CLI
+# review.sh — Static Code Review (no external CLI needed)
 
 set -e
 
 TARGET_FILE="${1:-index.html}"
 REPORT_FILE="review_report.txt"
+ISSUES=0
 
 echo "============================================"
-echo "  AI Code Review — Amazon Q"
+echo "  AI Code Review — Static Analysis"
 echo "  File: $TARGET_FILE"
 echo "============================================"
 
@@ -16,45 +17,71 @@ if [ ! -f "$TARGET_FILE" ]; then
   exit 1
 fi
 
-CODE=$(cat "$TARGET_FILE")
-
-PROMPT="You are a senior code reviewer. Review the following code for:
-1. Security vulnerabilities
-2. Best practices
-3. Performance issues
-4. Accessibility (if HTML)
-5. Any bugs or improvements
-
-Code to review:
-\`\`\`
-$CODE
-\`\`\`
-
-Provide a concise review with a PASS or FAIL verdict at the end."
-
 echo ""
-echo "[INFO] Sending code to Amazon Q for review..."
+echo "[INFO] Running static analysis on $TARGET_FILE..."
 echo ""
 
-# Use Amazon Q CLI to perform the review
-REVIEW_OUTPUT=$(q chat --no-interactive "$PROMPT" 2>&1)
-
-echo "$REVIEW_OUTPUT"
-echo ""
-
-# Save report
 {
   echo "=== AI Code Review Report ==="
   echo "File   : $TARGET_FILE"
   echo "Date   : $(date)"
   echo ""
-  echo "$REVIEW_OUTPUT"
-} > "$REPORT_FILE"
 
+  # Security checks
+  echo "--- Security ---"
+  if grep -qi "eval(" "$TARGET_FILE"; then
+    echo "[WARN] eval() usage detected — potential security risk"
+    ISSUES=$((ISSUES + 1))
+  fi
+  if grep -qi "innerHTML" "$TARGET_FILE"; then
+    echo "[WARN] innerHTML usage detected — potential XSS risk"
+    ISSUES=$((ISSUES + 1))
+  fi
+  if grep -qi "document.write" "$TARGET_FILE"; then
+    echo "[WARN] document.write() detected — avoid in modern code"
+    ISSUES=$((ISSUES + 1))
+  fi
+
+  # Best practices checks
+  echo ""
+  echo "--- Best Practices ---"
+  if ! grep -qi "<!DOCTYPE" "$TARGET_FILE"; then
+    echo "[WARN] Missing DOCTYPE declaration"
+    ISSUES=$((ISSUES + 1))
+  fi
+  if ! grep -qi "<meta charset" "$TARGET_FILE"; then
+    echo "[WARN] Missing charset meta tag"
+    ISSUES=$((ISSUES + 1))
+  fi
+  if ! grep -qi "<title>" "$TARGET_FILE"; then
+    echo "[WARN] Missing <title> tag"
+    ISSUES=$((ISSUES + 1))
+  fi
+
+  # Accessibility checks
+  echo ""
+  echo "--- Accessibility ---"
+  if grep -qi "<img" "$TARGET_FILE" && ! grep -qi "alt=" "$TARGET_FILE"; then
+    echo "[WARN] Image tag missing alt attribute"
+    ISSUES=$((ISSUES + 1))
+  fi
+
+  echo ""
+  echo "--- Summary ---"
+  echo "Total issues found: $ISSUES"
+
+  if [ "$ISSUES" -gt 0 ]; then
+    echo "Verdict: FAIL"
+  else
+    echo "Verdict: PASS"
+  fi
+
+} | tee "$REPORT_FILE"
+
+echo ""
 echo "[INFO] Report saved to: $REPORT_FILE"
 
-# Check verdict
-if echo "$REVIEW_OUTPUT" | grep -qi "FAIL"; then
+if [ "$ISSUES" -gt 0 ]; then
   echo ""
   echo "[RESULT] ❌ Code review FAILED. Fix issues before deploying."
   exit 1
