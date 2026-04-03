@@ -103,8 +103,8 @@ pipeline {
                 expression { DEPLOY_NEEDED == 'true' }
             }
             steps {
-                sh 'mkdir -p /var/www/html'
-                sh 'cp index.html /var/www/html/index.html'
+                sh 'sudo mkdir -p /var/www/html'
+                sh 'sudo cp index.html /var/www/html/index.html'
                 echo "✅ Deployed index.html successfully"
             }
         }
