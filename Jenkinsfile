@@ -1,5 +1,5 @@
 pipeline {
-    agent any
+    agent { label 'agent' }
 
     options {
         timeout(time: 15, unit: 'MINUTES')   // kill runaway builds — saves compute cost
