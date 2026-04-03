@@ -8,7 +8,6 @@ pipeline {
     }
 
     environment {
-        HEALTH_REPORT = ''
         DEPLOY_NEEDED = 'true'
     }
 
@@ -18,7 +17,7 @@ pipeline {
                 stage('Instance Health Check') {
                     steps {
                         script {
-                            HEALTH_REPORT = sh(script: '''
+                            def HEALTH_REPORT = sh(script: '''
                                 echo "===== INSTANCE HEALTH REPORT ====="
 
                                 echo "\n--- OS & Kernel ---"
@@ -68,6 +67,7 @@ pipeline {
                             ''', returnStdout: true).trim()
 
                             echo "${HEALTH_REPORT}"
+                            env.HEALTH_REPORT = HEALTH_REPORT
                         }
                     }
                 }
