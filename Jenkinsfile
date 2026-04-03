@@ -1,7 +1,53 @@
 pipeline {
     agent any
 
+    environment {
+        HEALTH_REPORT = ''
+    }
+
     stages {
+        stage('Instance Health Check') {
+            steps {
+                script {
+                    HEALTH_REPORT = sh(script: '''
+                        echo "===== INSTANCE HEALTH REPORT ====="
+                        echo ""
+                        echo "--- CPU Utilization ---"
+                        top -bn1 | grep "Cpu(s)" | awk '{print "User: "$2"  System: "$4"  Idle: "$8}'
+
+                        echo ""
+                        echo "--- Memory Usage ---"
+                        free -h | awk 'NR==1{print $0} NR==2{print $0}'
+
+                        echo ""
+                        echo "--- Disk Usage ---"
+                        df -h --output=source,size,used,avail,pcent,target | head -6
+
+                        echo ""
+                        echo "--- Load Average (1m / 5m / 15m) ---"
+                        uptime | awk -F'load average:' '{print $2}'
+
+                        echo ""
+                        echo "--- Uptime ---"
+                        uptime -p
+
+                        echo ""
+                        echo "--- Top 5 CPU-consuming Processes ---"
+                        ps -eo pid,comm,%cpu,%mem --sort=-%cpu | head -6
+
+                        echo ""
+                        echo "--- Top 5 Memory-consuming Processes ---"
+                        ps -eo pid,comm,%cpu,%mem --sort=-%mem | head -6
+
+                        echo ""
+                        echo "=================================="
+                    ''', returnStdout: true).trim()
+
+                    echo "${HEALTH_REPORT}"
+                }
+            }
+        }
+
         stage('Checkout') {
             steps {
                 checkout scm
@@ -45,7 +91,9 @@ Suggestions:
 - Re-run the pipeline after fixing the issue
 
 Build URL: ${env.BUILD_URL}
-Console Output: ${env.BUILD_URL}console"""
+Console Output: ${env.BUILD_URL}console
+
+${HEALTH_REPORT}"""
         }
         success {
             echo "🚀 Pipeline completed — site deployed."
@@ -61,7 +109,9 @@ What was done:
 - index.html deployed to /var/www/html
 
 Build URL: ${env.BUILD_URL}
-Console Output: ${env.BUILD_URL}console"""
+Console Output: ${env.BUILD_URL}console
+
+${HEALTH_REPORT}"""
         }
     }
 }
