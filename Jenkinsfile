@@ -1,5 +1,5 @@
 pipeline {
-    agent { label 'agent' }
+    agent { label 'vinod' }
 
     options {
         timeout(time: 15, unit: 'MINUTES')   // kill runaway builds — saves compute cost
